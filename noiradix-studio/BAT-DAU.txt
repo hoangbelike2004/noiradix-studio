@@ -1,0 +1,62 @@
+NOIRADIX STUDIO — BẮT ĐẦU
+========================
+
+1. Giải nén TOÀN BỘ file ZIP ra một thư mục trên máy.
+   Windows: nhấp phải file ZIP → Extract All / Giải nén tất cả.
+   Không chạy file khi nó vẫn đang nằm bên trong cửa sổ xem ZIP.
+
+2. Mở thư mục NOIRADIX-Studio vừa giải nén, rồi nhấp đúp:
+   • macOS:   Mo Studio.command
+   • Windows: Mo Studio.bat
+
+3. Trình duyệt sẽ tự mở Studio trên localhost. Bạn có thể vẽ ngay.
+   Nếu trình duyệt không tự mở, chép địa chỉ hiện trong cửa sổ khởi chạy
+   (ví dụ http://127.0.0.1:8080/) vào Chrome hoặc Edge.
+
+GIỮ CỬA SỔ KHỞI CHẠY MỞ TRONG LÚC DÙNG STUDIO.
+Lưu dự án trước khi đóng. Đóng cửa sổ hoặc nhấn Ctrl+C để tắt máy chủ.
+Chỉ đóng tab trình duyệt thì máy chủ vẫn chạy.
+
+Bản ZIP portable đã kèm bộ chạy: không cần cài Node.js, npm hay gõ lệnh.
+Giữ nguyên thư mục runtime và các file đi kèm. Có thể di chuyển cả thư mục.
+Nếu bấm mở lần nữa, Studio dùng lại máy chủ đang chạy của thư mục này.
+Nếu cổng 8080 bận, Studio tự chọn cổng khác và hiển thị địa chỉ đúng.
+
+TRỢ LÝ AI (TÙY CHỌN)
+---------------------
+Vẽ tay, import ảnh và chỉnh frame dùng được ngay, không cần key.
+Muốn AI thao tác trong Studio: mở “Trợ lý AI” → “Continue with ChatGPT”, đăng nhập trên
+trang OpenAI và cho phép Studio dùng gói ChatGPT nếu tài khoản hỗ trợ.
+Quay lại Studio, đọc thông báo lần đầu và bấm “Đã hiểu” để bắt đầu chat.
+Phần AI cần Internet, tài khoản có quyền sử dụng và còn hạn mức. Phiên
+đăng nhập được lưu trên máy để có thể dùng lại khi mở app.
+Bạn có thể chọn “Dùng API key riêng” nếu muốn dùng tài khoản API thay thế.
+Sau khi kết nối, mở nút bánh răng Cài đặt để đổi tài khoản hoặc model.
+Chọn “Tạo frame mới từ hình hiện tại” để AI dùng nhân vật đang chọn làm mẫu.
+Bấm “Thêm ảnh”, kéo thả hoặc dán ảnh vào chat để gửi ảnh tham khảo.
+Bạn có thể yêu cầu đổi FPS, nhân đôi/lật frame, quản lý layer và xuất file.
+File kết quả xuất hiện bằng nút tải ngay trong chat.
+Xem hướng dẫn chi tiết: docs/AI_CHAT.md.
+
+KHI KHÔNG MỞ ĐƯỢC
+-----------------
+• Hãy giải nén toàn bộ và kiểm tra vẫn còn thư mục runtime.
+• macOS, lỗi EPERM / Operation not permitted khi đọc file trong Desktop:
+  mở System Settings → Privacy & Security → Files & Folders → Terminal,
+  bật Desktop Folder, rồi thoát hẳn Terminal bằng ⌘Q và mở Studio lại.
+  Nếu đặt dự án trong Documents/Downloads, bật quyền tương ứng.
+  Cách khác: dùng Finder → Go → Home, chuyển toàn bộ thư mục dự án vào
+  thư mục chính này, bên ngoài Desktop/Documents/Downloads, rồi mở lại.
+  Không cần cấp quyền truy cập toàn bộ ổ đĩa cho lỗi đọc Desktop này.
+• macOS: nếu hệ điều hành chặn file tải từ Internet, chỉ mở khi bạn biết
+  và tin cậy người gửi. Xem System Settings → Privacy & Security để xem
+  lựa chọn cho phép mở, nếu macOS cung cấp lựa chọn đó.
+• Nếu vẫn không chạy, chụp thông báo trong cửa sổ khởi chạy gửi người
+  cung cấp dự án. Không gửi ảnh có chứa API key.
+
+NẾU BẠN NHẬN BẢN MÃ NGUỒN THAY VÌ BẢN ZIP PORTABLE
+-------------------------------------------------
+Bản mã nguồn dùng tên start-noiradix-studio.command (macOS) hoặc
+start-noiradix-studio.bat (Windows). Cần cài Node.js LTS (từ 22 trở lên)
+một lần: https://nodejs.org/en/download. Sau đó nhấp đúp file khởi chạy.
+Không cần npm install.

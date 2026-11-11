@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOIRADIX PixelArt — Canvas &amp; Live PIX2 Code Editor</title>
+  <meta name="description" content="A lightweight, client-side 2D pixel art editor and live bi-directional PIX2 source code editor. Draw freely on canvas or edit structured .pix2 code in real-time.">
+  <link rel="icon" type="image/svg+xml" href="../noiradix-studio-logo.svg">
+
+  <!-- FontAwesome Icons (Local, Offline) -->
+  <link rel="stylesheet" href="../css/fontawesome/all.min.css">
+
+  <!-- PixelArt Stylesheet -->
+  <link rel="stylesheet" href="css/pixelart.css">
+</head>
+<body class="light-theme">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="pa-header">
+    <div class="pa-brand-group">
+      <a href="../" class="pa-btn pa-btn-subtle" title="Back to NOIRADIX Studio (Sprites &amp; Unity)">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Studio</span>
+      </a>
+      <div class="pa-brand">
+        <img src="../noiradix-studio-logo.svg" alt="NOIRADIX" class="pa-logo">
+        <span class="pa-brand-name">NOIRADIX</span>
+        <span class="pa-app-badge">PixelArt</span>
+        <span class="pa-app-version-badge" id="pa-app-version-badge" title="Click to view About &amp; Release Info" style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); cursor: pointer; margin-left: 4px;">v2.0.0</span>
+      </div>
+      <!-- Project Sessions Tab Strip -->
+      <div class="project-tabs-strip" id="pa-project-tabs-strip" title="Open Artwork Sessions">
+        <!-- [artwork.pix2] [+] -->
+      </div>
+      <div class="pa-doc-info">
+        <input type="text" id="pa-doc-title" class="pa-title-input" value="Pixel Artwork" title="Click to rename artwork" aria-label="Artwork Title">
+        <span id="pa-header-dirty-dot" class="pa-dirty-dot" title="Unsaved changes (Ctrl+S to save)">●</span>
+        <button type="button" class="pa-dim-badge" id="pa-dim-badge" title="Click to resize canvas resolution (W × H)" aria-label="Resize Canvas Resolution">64×64</button>
+        <div class="pa-file-status-group" id="pa-file-status-group">
+          <span id="pa-file-source-badge" class="pa-file-source-badge draft" title="File Source: In-Memory Draft. Press Ctrl+S to save to disk.">
+            <i class="fa-solid fa-clock-rotate-left"></i> <span id="pa-file-source-text">Draft</span>
+          </span>
+          <div id="pa-file-path-pill" class="pa-file-path-pill" title="Click to copy file name">
+            <span id="pa-file-path-text">untitled.pix2</span>
+            <i class="fa-regular fa-copy copy-icon"></i>
+          </div>
+          <button id="btn-reload-file" class="pa-btn-icon-xs" title="Reload from disk (Auto-checks external changes)">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+          <span id="pa-save-status-badge" class="pa-save-status-badge draft" title="Save Status">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span id="pa-save-status-text">Unsaved to Disk</span>
+          </span>
+        </div>
+      </div>
+      <div id="pa-autosave-status-pill" class="pa-autosave-pill saved" title="Automatic Local Persistence &amp; Recovery Snapshot">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span id="pa-autosave-status-text">Autosaved</span>
+      </div>
+    </div>
+
+    <div class="pa-actions-group">
+      <button id="btn-new-canvas" class="pa-btn" title="New Canvas (Ctrl+N)">
+        <i class="fa-solid fa-file-circle-plus"></i>
+        <span>New</span>
+      </button>
+      <button id="btn-open-file" class="pa-btn" title="Open .pix2 File (Ctrl+O)">
+        <i class="fa-solid fa-folder-open"></i>
+        <span>Open</span>
+      </button>
+      <button id="btn-save-pix2" class="pa-btn" title="Save .pix2 File (Ctrl+S)">
+        <i class="fa-solid fa-floppy-disk"></i>
+        <span>Save</span>
+      </button>
+      <button id="btn-export-png" class="pa-btn pa-btn-accent" title="Export PNG image">
+        <i class="fa-solid fa-file-image"></i>
+        <span>Export PNG</span>
+      </button>
+      <button id="btn-ai-assistant" class="pa-btn pa-btn-ai" title="AI PixelArt Prompt Studio">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>AI Studio</span>
+      </button>
+    </div>
+
+    <div class="pa-tools-group">
+      <div class="pa-view-toggles" role="group" aria-label="Layout View Modes">
+        <button id="btn-view-split" class="pa-icon-btn active" title="Split View (Canvas + Code)">
+          <i class="fa-solid fa-table-columns"></i>
+        </button>
+        <button id="btn-view-canvas" class="pa-icon-btn" title="Canvas Only">
+          <i class="fa-solid fa-palette"></i>
+        </button>
+        <button id="btn-view-code" class="pa-icon-btn" title="PIX2 Code Only">
+          <i class="fa-solid fa-code"></i>
+        </button>
+      </div>
+
+      <button id="btn-theme-toggle" class="pa-icon-btn" title="Toggle Theme (Dark / Light)">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button id="btn-help-modal" class="pa-icon-btn" title="Help &amp; Keyboard Shortcuts">
+        <i class="fa-solid fa-circle-question"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN WORKSPACE (SPLIT VIEW) ================= -->
+  <main class="pa-workspace" id="pa-workspace">
+    
+    <!-- LEFT TOOLBAR -->
+    <aside class="pa-toolbar" id="pa-toolbar">
+      <button class="pa-tool-btn active" data-tool="pen" title="Pencil (B) — Draw pixels">
+        <i class="fa-solid fa-pencil"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="eraser" title="Eraser (E) — Erase pixels">
+        <i class="fa-solid fa-eraser"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="bucket" title="Paint Bucket (G) — 4-way flood fill">
+        <i class="fa-solid fa-fill-drip"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="line" title="Line Tool (L) — Bresenham straight line">
+        <i class="fa-solid fa-slash"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="rect" title="Rectangle Outline Tool (U) [Hold Shift for 1:1 Square, Alt for Center]">
+        <i class="fa-regular fa-square"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="rect-fill" title="Filled Rectangle Tool (Shift+U) [Hold Shift for 1:1 Square, Alt for Center]">
+        <i class="fa-solid fa-square"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="circle" title="Circle / Ellipse Outline Tool (C) [Hold Shift for 1:1 Circle, Alt for Center]">
+        <i class="fa-regular fa-circle"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="circle-fill" title="Filled Circle / Ellipse Tool (Shift+C) [Hold Shift for 1:1 Circle, Alt for Center]">
+        <i class="fa-solid fa-circle"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="select" title="Selection Marquee (V or M) — Drag to move selection">
+        <i class="fa-solid fa-crop-simple"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="region-select" id="btn-pa-tool-region-select" title="Region Select Tool (R) — Inspect, select, and isolate structural regions">
+        <i class="fa-solid fa-object-group"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="picker" title="Eyedropper (I) — Sample color">
+        <i class="fa-solid fa-eye-dropper"></i>
+      </button>
+      <button class="pa-tool-btn" data-tool="pan" title="Hand / Pan Tool (H or Space+Drag)">
+        <i class="fa-solid fa-hand"></i>
+      </button>
+
+      <div class="pa-tool-sep"></div>
+
+      <!-- Symmetry Toggles (Custom Visual Mirror Axis SVGs) -->
+      <button id="btn-toggle-sym-h" class="pa-tool-btn" title="Horizontal Symmetry Guide (Shift+H) [Mirror Left ↔ Right across vertical center]">
+        <svg class="pa-sym-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="3 3"/>
+          <circle cx="6" cy="12" r="3" fill="currentColor"/>
+          <circle cx="18" cy="12" r="3" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="btn-toggle-sym-v" class="pa-tool-btn" title="Vertical Symmetry Guide (Shift+V) [Mirror Top ↕ Bottom across horizontal center]">
+        <svg class="pa-sym-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3 3"/>
+          <circle cx="12" cy="6" r="3" fill="currentColor"/>
+          <circle cx="12" cy="18" r="3" fill="currentColor"/>
+        </svg>
+      </button>
+
+      <div class="pa-tool-sep"></div>
+
+      <!-- Transform Tools (Selection or Full Canvas) -->
+      <button id="btn-rotate-90" class="pa-tool-btn" title="Rotate 90° Clockwise (R) [Selection or Canvas]">
+        <svg class="pa-tool-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.7L21 8"/>
+          <polyline points="21 3 21 8 16 8"/>
+          <text x="12" y="15.5" font-size="7.5" font-weight="900" fill="currentColor" stroke="none" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif">90°</text>
+        </svg>
+      </button>
+      <button id="btn-flip-h" class="pa-tool-btn" title="Flip Horizontal (Mirror X) [Selection or Canvas]">
+        <i class="fa-solid fa-arrows-left-right"></i>
+      </button>
+      <button id="btn-flip-v" class="pa-tool-btn" title="Flip Vertical (Mirror Y) [Selection or Canvas]">
+        <i class="fa-solid fa-arrows-up-down"></i>
+      </button>
+
+      <div class="pa-tool-sep"></div>
+
+      <!-- Align Tools -->
+      <button id="btn-align-center" class="pa-tool-btn" title="Align Center (Both Axes)">
+        <i class="fa-solid fa-crosshairs"></i>
+      </button>
+      <button id="btn-align-left" class="pa-tool-btn" title="Align Left (Snap to Left Canvas Edge)">
+        <i class="fa-solid fa-align-left"></i>
+      </button>
+      <button id="btn-align-right" class="pa-tool-btn" title="Align Right (Snap to Right Canvas Edge)">
+        <i class="fa-solid fa-align-right"></i>
+      </button>
+      <button id="btn-align-top" class="pa-tool-btn" title="Align Top (Snap to Top Canvas Edge)">
+        <i class="fa-solid fa-arrows-up-to-line"></i>
+      </button>
+      <button id="btn-align-bottom" class="pa-tool-btn" title="Align Bottom (Snap to Bottom Canvas Edge)">
+        <i class="fa-solid fa-arrows-down-to-line"></i>
+      </button>
+
+      <div class="pa-tool-sep"></div>
+
+      <!-- History & Clear -->
+      <button id="btn-undo" class="pa-tool-btn" title="Undo (Ctrl+Z)">
+        <i class="fa-solid fa-arrow-rotate-left"></i>
+      </button>
+      <button id="btn-redo" class="pa-tool-btn" title="Redo (Ctrl+Y)">
+        <i class="fa-solid fa-arrow-rotate-right"></i>
+      </button>
+      <button id="btn-clear-canvas" class="pa-tool-btn pa-tool-danger" title="Clear Canvas">
+        <i class="fa-solid fa-trash-can"></i>
+      </button>
+    </aside>
+
+    <!-- CENTER CANVAS PANE -->
+    <section class="pa-canvas-pane" id="pa-canvas-pane">
+      <!-- Pre-Reload Backup Recovery Banner -->
+      <div id="pa-recovery-banner" class="pa-recovery-banner hidden">
+        <div class="pa-recovery-inner">
+          <i class="fa-solid fa-clock-rotate-left text-accent"></i>
+          <span id="pa-recovery-msg">Pre-reload backup found from previous session.</span>
+          <button id="btn-restore-backup" class="pa-btn-xs pa-btn-accent"><i class="fa-solid fa-rotate-left"></i> Restore</button>
+          <button id="btn-dismiss-backup" class="pa-btn-xs pa-btn-subtle"><i class="fa-solid fa-xmark"></i> Dismiss</button>
+        </div>
+      </div>
+
+      <!-- Isolation Mode Breadcrumb Banner -->
+      <div id="pa-isolation-banner" class="pa-isolation-banner hidden" style="background: rgba(99, 102, 241, 0.15); border-bottom: 1px solid rgba(99, 102, 241, 0.4); padding: 6px 14px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; z-index: 10;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-bullseye text-accent"></i>
+          <span style="color: var(--text-muted, #94a3b8);">Isolation Mode:</span>
+          <strong id="pa-isolation-breadcrumb" style="color: #818cf8;">Character / Head / Left Eye</strong>
+        </div>
+        <button id="btn-pa-exit-isolation" class="pa-btn-xs pa-btn-accent" title="Exit Isolation Mode (Esc)">
+          <i class="fa-solid fa-arrow-left"></i> Exit Isolation (Esc)
+        </button>
+      </div>
+
+      <div class="pa-canvas-viewport" id="pa-canvas-viewport">
+        <div class="pa-canvas-container" id="pa-canvas-container">
+          <div class="pa-ruler-corner" id="pa-ruler-corner">px</div>
+          <canvas id="pa-ruler-top" class="pa-ruler-top-bar" height="24"></canvas>
+          <canvas id="pa-ruler-left" class="pa-ruler-left-bar" width="24"></canvas>
+          <div class="pa-canvas-stack" id="pa-canvas-stack">
+            <canvas id="pa-canvas-main" width="64" height="64" class="pa-canvas-layer"></canvas>
+            <canvas id="pa-canvas-preview" width="64" height="64" class="pa-canvas-layer pa-canvas-overlay"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Statusbar -->
+      <footer class="pa-canvas-statusbar" id="pa-canvas-statusbar">
+        <div class="pa-status-left">
+          <span class="pa-status-item">
+            <i class="fa-solid fa-crosshairs"></i>
+            <span id="pa-coord-label">0, 0</span>
+          </span>
+          <div class="pa-status-divider" aria-hidden="true"></div>
+          <span class="pa-status-item">
+            <span class="pa-color-dot" id="pa-hover-color-dot"></span>
+            <span id="pa-hover-color-label">Transparent</span>
+          </span>
+        </div>
+
+        <div class="pa-status-spacer"></div>
+        <div class="pa-status-divider" aria-hidden="true"></div>
+
+        <div class="pa-status-right">
+          <!-- Canvas Background Style Selector -->
+          <div class="pa-bg-mode-group" role="group" aria-label="Canvas Background Style">
+            <span class="pa-bg-group-label" title="Canvas Background Style"><i class="fa-solid fa-layer-group"></i> Bg:</span>
+            <button id="btn-bg-transparent" class="pa-status-btn pa-bg-btn active" title="Checkerboard (Transparent)">
+              <i class="fa-solid fa-chess-board"></i>
+              <span>Checker</span>
+            </button>
+            <button id="btn-bg-white" class="pa-status-btn pa-bg-btn" title="Solid White (#FFFFFF)">
+              <span class="pa-bg-color-chip white"></span>
+              <span>White</span>
+            </button>
+            <button id="btn-bg-black" class="pa-status-btn pa-bg-btn" title="Solid Black (#000000)">
+              <span class="pa-bg-color-chip black"></span>
+              <span>Black</span>
+            </button>
+            <button id="btn-bg-custom" class="pa-status-btn pa-bg-btn" title="Custom Background Color (Click to pick color)">
+              <span class="pa-bg-color-chip custom" id="pa-bg-custom-chip" style="background-color: #2a2e3f;"></span>
+              <span id="pa-bg-custom-label">Custom</span>
+            </button>
+            <input type="color" id="pa-bg-custom-input" class="pa-visually-hidden" value="#2a2e3f" title="Choose Custom Canvas Color">
+          </div>
+
+          <div class="pa-status-divider" aria-hidden="true"></div>
+
+          <button id="btn-toggle-grid" class="pa-status-btn active" title="Toggle Pixel Grid">
+            <i class="fa-solid fa-border-all"></i>
+            <span>Grid</span>
+          </button>
+
+          <button id="btn-toggle-rulers" class="pa-status-btn active" title="Toggle Canvas Pixel Rulers">
+            <i class="fa-solid fa-ruler-combined"></i>
+            <span>Rulers</span>
+          </button>
+
+          <div class="pa-status-divider" aria-hidden="true"></div>
+
+          <!-- Alignment Guides -->
+          <div class="pa-guides-group" role="group" aria-label="Alignment Guides">
+            <button id="btn-toggle-guide-center" class="pa-status-btn" title="Toggle Center Crosshair Guides">
+              <i class="fa-solid fa-crosshairs"></i>
+              <span>Center</span>
+            </button>
+            <button id="btn-toggle-guide-v" class="pa-status-btn" title="Toggle Vertical Center Guide">
+              <i class="fa-solid fa-arrows-left-right"></i>
+              <span>V-Guide</span>
+            </button>
+            <button id="btn-toggle-guide-h" class="pa-status-btn" title="Toggle Horizontal Center Guide">
+              <i class="fa-solid fa-arrows-up-down"></i>
+              <span>H-Guide</span>
+            </button>
+          </div>
+
+          <div class="pa-status-divider" aria-hidden="true"></div>
+
+          <div class="pa-zoom-controls">
+            <button id="btn-zoom-out" class="pa-icon-btn btn-xs" title="Zoom Out (-)"><i class="fa-solid fa-minus"></i></button>
+            <span id="pa-zoom-label" class="pa-zoom-label">12×</span>
+            <button id="btn-zoom-in" class="pa-icon-btn btn-xs" title="Zoom In (+)"><i class="fa-solid fa-plus"></i></button>
+            <button id="btn-zoom-fit" class="pa-btn-xs" title="Auto Fit">Fit</button>
+            <button id="btn-zoom-100" class="pa-btn-xs" title="Actual 1x">1×</button>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- DRAGGABLE SPLIT RESIZER (HORIZONTAL RESIZE) -->
+    <div class="pa-split-resizer" id="pa-split-resizer" title="Drag horizontally to resize panel width" role="separator" aria-orientation="vertical"></div>
+
+    <!-- RIGHT PIX2 SOURCE CODE PANE -->
+    <section class="pa-code-pane side-layers-active" id="pa-code-pane">
+      <header class="pa-code-header code-context-hidden" id="pa-code-header">
+        <div class="pa-code-title" style="display: flex; align-items: center; gap: 8px;">
+          <div class="pa-side-tab-toggle" style="display: flex; gap: 4px; border-radius: 4px; padding: 2px;">
+            <button id="btn-pa-side-layers" class="pa-btn-xs active" title="Layers &amp; Structure"><i class="fa-solid fa-layer-group"></i> Layers</button>
+            <button id="btn-pa-side-code" class="pa-btn-xs" title="PIX2 Source Code"><i class="fa-solid fa-code"></i> Code</button>
+          </div>
+          <span class="pa-sync-badge synced pa-code-context-control" id="pa-sync-badge">
+            <i class="fa-solid fa-circle"></i> Synced
+          </span>
+          <span id="pa-code-mode-badge" class="pa-mode-badge locked pa-code-context-control" title="Safe View Mode (ReadOnly to prevent accidental deletion)">
+            <i class="fa-solid fa-lock"></i> View Only
+          </span>
+        </div>
+
+        <div class="pa-code-spacer pa-code-context-control" aria-hidden="true"></div>
+
+        <div class="pa-code-actions pa-code-context-control">
+          <button id="btn-toggle-code-lock" class="pa-btn-xs" title="Unlock to edit PIX2 code directly">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>Edit</span>
+          </button>
+          <button id="btn-apply-code" class="pa-btn-xs pa-btn-accent hidden" title="Apply edits to Canvas">
+            <i class="fa-solid fa-check"></i>
+            <span>Apply</span>
+          </button>
+          <button id="btn-copy-code" class="pa-btn-xs" title="Copy code to clipboard">
+            <i class="fa-regular fa-copy"></i>
+            <span>Copy</span>
+          </button>
+          <button id="btn-download-pix2" class="pa-btn-xs" title="Download .pix2 file">
+            <i class="fa-solid fa-download"></i>
+            <span>.pix2</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Structure & Layers View -->
+      <div id="pa-layers-view" class="pa-layers-container">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px;">
+          <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim, #94a3b8);"><i class="fa-solid fa-layer-group"></i> Artwork Layers</span>
+          <div style="display: flex; gap: 4px;">
+            <button id="btn-pa-add-layer" class="pa-btn-xs pa-btn-accent" title="Add New Layer"><i class="fa-solid fa-plus"></i> Layer</button>
+            <button id="btn-pa-add-group" class="pa-btn-xs" title="Add Group"><i class="fa-solid fa-folder-plus"></i> Group</button>
+            <button id="btn-pa-add-region" class="pa-btn-xs" title="Add Region"><i class="fa-solid fa-vector-square"></i> Region</button>
+          </div>
+        </div>
+        <div id="pa-layers-tree" style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
+          <!-- Dynamically populated layers & regions -->
+        </div>
+      </div>
+
+      <div class="pa-code-body hidden" id="pa-code-body">
+        <div class="pa-code-gutter" id="pa-code-gutter" aria-hidden="true"></div>
+        <textarea id="pa-code-editor" class="pa-code-editor" readonly spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="PIX2 code appears here (Click 'Edit' to unlock manual editing)..."></textarea>
+      </div>
+
+      <footer class="pa-code-statusbar pa-code-context-control" id="pa-code-statusbar">
+        <div class="pa-code-status-left">
+          <span id="pa-code-lines-count">1 line</span>
+          <span class="pa-sep">•</span>
+          <span id="pa-code-pixels-count">0 pixels</span>
+        </div>
+        <div class="pa-code-status-right">
+          <span id="pa-diagnostic-pill" class="pa-diagnostic-pill clean">
+            <i class="fa-solid fa-check"></i> Standard v1.0
+          </span>
+        </div>
+      </footer>
+    </section>
+
+  </main>
+
+  <!-- ================= BOTTOM PALETTE DECK ================= -->
+  <footer class="pa-palette-deck">
+    <div class="pa-active-colors">
+      <div class="pa-color-slot primary" id="pa-color-primary-slot" title="Primary Color (Left Click). Press X to swap with Secondary.">
+        <div class="pa-color-preview" id="pa-color-primary-preview" style="background-color: #4f46e5;"></div>
+      </div>
+      <button id="btn-swap-colors" class="pa-swap-btn" title="Swap Primary &amp; Secondary Colors (X)">
+        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+      </button>
+      <div class="pa-color-slot secondary" id="pa-color-secondary-slot" title="Secondary Color (Press X to swap as Primary). Click to pick.">
+        <div class="pa-color-preview" id="pa-color-secondary-preview" style="background-color: #ffffff;"></div>
+      </div>
+    </div>
+
+    <div class="pa-color-inputs">
+      <div class="pa-hex-wrapper">
+        <span class="pa-hex-prefix">#</span>
+        <input type="text" id="pa-color-hex" class="pa-hex-input" value="4f46e5" maxlength="8" spellcheck="false" title="Hex code (#RGB, #RRGGBB, #RRGGBBAA)">
+      </div>
+      <input type="color" id="pa-color-picker-native" class="pa-native-picker" value="#4f46e5" title="Open Native Color Picker">
+
+      <div class="pa-alpha-wrapper">
+        <span class="pa-alpha-label">Alpha</span>
+        <input type="range" id="pa-alpha-slider" min="0" max="255" value="255" class="pa-alpha-slider" title="Color Alpha Transparency (0 - 255)">
+        <span id="pa-alpha-val" class="pa-alpha-val">255</span>
+      </div>
+    </div>
+
+    <div class="pa-palette-presets">
+      <select id="pa-palette-select" class="pa-select" title="Load Preset or Custom Palette"></select>
+      <button id="btn-save-palette" class="pa-palette-bookmark-btn" title="Save Current Palette to Library...">
+        <i class="fa-solid fa-bookmark"></i>
+      </button>
+    </div>
+
+    <div class="pa-swatches-scroll">
+      <div class="pa-swatches" id="pa-swatches-container"></div>
+      <button id="btn-add-palette-color" class="pa-swatch-add-btn" title="Add current color to palette">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+  </footer>
+
+  <!-- ================= RIGHT-CLICK CONTEXT MENU ================= -->
+  <div id="pa-context-menu" class="studio-context-menu hidden">
+    <div class="context-menu-item" data-action="cut">
+      <i class="fa-solid fa-scissors"></i>
+      <span>Cut</span>
+      <span class="context-shortcut">Ctrl+X</span>
+    </div>
+    <div class="context-menu-item" data-action="copy">
+      <i class="fa-solid fa-copy"></i>
+      <span>Copy</span>
+      <span class="context-shortcut">Ctrl+C</span>
+    </div>
+    <div class="context-menu-item" data-action="paste">
+      <i class="fa-solid fa-paste"></i>
+      <span>Paste</span>
+      <span class="context-shortcut">Ctrl+V</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="select-all">
+      <i class="fa-solid fa-border-all"></i>
+      <span>Select All</span>
+      <span class="context-shortcut">Ctrl+A</span>
+    </div>
+    <div class="context-menu-item" data-action="deselect">
+      <i class="fa-solid fa-xmark"></i>
+      <span>Deselect</span>
+      <span class="context-shortcut">Esc</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="fill">
+      <i class="fa-solid fa-fill-drip"></i>
+      <span>Fill Selection</span>
+      <span class="context-shortcut">F</span>
+    </div>
+    <div class="context-menu-item" data-action="flip-h">
+      <i class="fa-solid fa-arrows-left-right"></i>
+      <span>Flip Horizontal</span>
+      <span class="context-shortcut">H</span>
+    </div>
+    <div class="context-menu-item" data-action="flip-v">
+      <i class="fa-solid fa-arrows-up-down"></i>
+      <span>Flip Vertical</span>
+      <span class="context-shortcut">Shift+H</span>
+    </div>
+    <div class="context-menu-item" data-action="rotate-90">
+      <i class="fa-solid fa-rotate-right"></i>
+      <span>Rotate 90° Clockwise</span>
+      <span class="context-shortcut">R</span>
+    </div>
+    <div class="context-menu-item" data-action="align-center">
+      <i class="fa-solid fa-crosshairs"></i>
+      <span>Center Content</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item text-danger" data-action="delete">
+      <i class="fa-solid fa-trash-can"></i>
+      <span>Delete Selection</span>
+      <span class="context-shortcut">Del</span>
+    </div>
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- NEW CANVAS MODAL -->
+  <div id="modal-new-canvas" class="pa-modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="pa-modal-dialog">
+      <div class="pa-modal-header">
+        <h3><i class="fa-solid fa-file-circle-plus text-accent"></i> New PixelArt Canvas</h3>
+        <button class="pa-modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="pa-modal-body">
+        <p class="pa-modal-hint">Select a standard pixel art aspect ratio or specify custom dimensions up to 1024×1024.</p>
+        
+        <div class="pa-preset-category-label">Square (1:1)</div>
+        <div class="pa-presets-grid">
+          <button class="pa-preset-chip" data-w="16" data-h="16">16 × 16</button>
+          <button class="pa-preset-chip" data-w="24" data-h="24">24 × 24</button>
+          <button class="pa-preset-chip" data-w="32" data-h="32">32 × 32</button>
+          <button class="pa-preset-chip" data-w="48" data-h="48">48 × 48</button>
+          <button class="pa-preset-chip active" data-w="64" data-h="64">64 × 64</button>
+          <button class="pa-preset-chip" data-w="128" data-h="128">128 × 128</button>
+          <button class="pa-preset-chip" data-w="256" data-h="256">256 × 256</button>
+          <button class="pa-preset-chip" data-w="512" data-h="512">512 × 512</button>
+          <button class="pa-preset-chip" data-w="1024" data-h="1024">1024 × 1024</button>
+        </div>
+
+        <div class="pa-preset-category-label">Classic &amp; Handheld (4:3 &amp; 3:2)</div>
+        <div class="pa-presets-grid">
+          <button class="pa-preset-chip" data-w="32" data-h="24">32 × 24 (4:3)</button>
+          <button class="pa-preset-chip" data-w="64" data-h="48">64 × 48 (4:3)</button>
+          <button class="pa-preset-chip" data-w="160" data-h="120">160 × 120 (4:3)</button>
+          <button class="pa-preset-chip" data-w="320" data-h="240">320 × 240 (4:3)</button>
+          <button class="pa-preset-chip" data-w="48" data-h="32">48 × 32 (3:2)</button>
+          <button class="pa-preset-chip" data-w="240" data-h="160">240 × 160 (GBA 3:2)</button>
+        </div>
+
+        <div class="pa-preset-category-label">Widescreen &amp; Cinematic (16:9 &amp; 21:9)</div>
+        <div class="pa-presets-grid">
+          <button class="pa-preset-chip" data-w="64" data-h="36">64 × 36 (16:9)</button>
+          <button class="pa-preset-chip" data-w="192" data-h="108">192 × 108 (16:9)</button>
+          <button class="pa-preset-chip" data-w="320" data-h="180">320 × 180 (16:9)</button>
+          <button class="pa-preset-chip" data-w="640" data-h="360">640 × 360 (16:9)</button>
+          <button class="pa-preset-chip" data-w="256" data-h="110">256 × 110 (21:9)</button>
+        </div>
+
+        <div class="pa-custom-size-row">
+          <div class="pa-input-group">
+            <label for="input-custom-w">Width (px)</label>
+            <input type="number" id="input-custom-w" min="1" max="1024" value="64">
+          </div>
+          <span class="pa-times">×</span>
+          <div class="pa-input-group">
+            <label for="input-custom-h">Height (px)</label>
+            <input type="number" id="input-custom-h" min="1" max="1024" value="64">
+          </div>
+        </div>
+      </div>
+      <div class="pa-modal-footer">
+        <button class="pa-btn" data-close-modal>Cancel</button>
+        <button id="btn-confirm-new-canvas" class="pa-btn pa-btn-accent">Create Canvas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZE CANVAS MODAL -->
+  <div id="modal-resize-canvas" class="pa-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="pa-resize-modal-title">
+    <div class="pa-modal-dialog">
+      <div class="pa-modal-header">
+        <h3 id="pa-resize-modal-title"><i class="fa-solid fa-up-right-and-down-left-from-center text-accent"></i> Resize Canvas Resolution</h3>
+        <button class="pa-modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="pa-modal-body">
+        <p class="pa-modal-hint">Select a standard pixel art aspect ratio or specify custom dimensions up to 1024×1024. Existing artwork pixels will be preserved.</p>
+        
+        <div class="pa-preset-category-label">Square (1:1)</div>
+        <div class="pa-presets-grid" id="pa-resize-presets-square">
+          <button class="pa-preset-chip" data-w="16" data-h="16">16 × 16</button>
+          <button class="pa-preset-chip" data-w="24" data-h="24">24 × 24</button>
+          <button class="pa-preset-chip" data-w="32" data-h="32">32 × 32</button>
+          <button class="pa-preset-chip" data-w="48" data-h="48">48 × 48</button>
+          <button class="pa-preset-chip" data-w="64" data-h="64">64 × 64</button>
+          <button class="pa-preset-chip" data-w="128" data-h="128">128 × 128</button>
+          <button class="pa-preset-chip" data-w="256" data-h="256">256 × 256</button>
+          <button class="pa-preset-chip" data-w="512" data-h="512">512 × 512</button>
+          <button class="pa-preset-chip" data-w="1024" data-h="1024">1024 × 1024</button>
+        </div>
+
+        <div class="pa-preset-category-label">Classic &amp; Handheld (4:3 &amp; 3:2)</div>
+        <div class="pa-presets-grid" id="pa-resize-presets-classic">
+          <button class="pa-preset-chip" data-w="32" data-h="24">32 × 24 (4:3)</button>
+          <button class="pa-preset-chip" data-w="64" data-h="48">64 × 48 (4:3)</button>
+          <button class="pa-preset-chip" data-w="160" data-h="120">160 × 120 (4:3)</button>
+          <button class="pa-preset-chip" data-w="320" data-h="240">320 × 240 (4:3)</button>
+          <button class="pa-preset-chip" data-w="48" data-h="32">48 × 32 (3:2)</button>
+          <button class="pa-preset-chip" data-w="240" data-h="160">240 × 160 (GBA 3:2)</button>
+        </div>
+
+        <div class="pa-preset-category-label">Widescreen &amp; Cinematic (16:9 &amp; 21:9)</div>
+        <div class="pa-presets-grid" id="pa-resize-presets-wide">
+          <button class="pa-preset-chip" data-w="64" data-h="36">64 × 36 (16:9)</button>
+          <button class="pa-preset-chip" data-w="192" data-h="108">192 × 108 (16:9)</button>
+          <button class="pa-preset-chip" data-w="320" data-h="180">320 × 180 (16:9)</button>
+          <button class="pa-preset-chip" data-w="640" data-h="360">640 × 360 (16:9)</button>
+          <button class="pa-preset-chip" data-w="256" data-h="110">256 × 110 (21:9)</button>
+        </div>
+
+        <div class="pa-custom-size-row">
+          <div class="pa-input-group">
+            <label for="input-resize-w">Width (px)</label>
+            <input type="number" id="input-resize-w" min="1" max="1024" value="64">
+          </div>
+          <span class="pa-times">×</span>
+          <div class="pa-input-group">
+            <label for="input-resize-h">Height (px)</label>
+            <input type="number" id="input-resize-h" min="1" max="1024" value="64">
+          </div>
+        </div>
+      </div>
+      <div class="pa-modal-footer">
+        <button class="pa-btn" data-close-modal>Cancel</button>
+        <button id="btn-confirm-resize-canvas" class="pa-btn pa-btn-accent">
+          <i class="fa-solid fa-arrows-up-down-left-right"></i> Resize Canvas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT PNG MODAL -->
+  <div id="modal-export-png" class="pa-modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="pa-modal-dialog">
+      <div class="pa-modal-header">
+        <h3><i class="fa-solid fa-file-image text-accent"></i> Export PNG Image</h3>
+        <button class="pa-modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="pa-modal-body">
+        <div class="pa-export-preview-box">
+          <canvas id="pa-export-preview-canvas" width="128" height="128"></canvas>
+        </div>
+
+        <div class="pa-scale-selector">
+          <label>Scale Multiplier:</label>
+          <div class="pa-scale-buttons">
+            <button class="pa-scale-btn" data-scale="1">1×</button>
+            <button class="pa-scale-btn" data-scale="2">2×</button>
+            <button class="pa-scale-btn" data-scale="4">4×</button>
+            <button class="pa-scale-btn active" data-scale="8">8×</button>
+            <button class="pa-scale-btn" data-scale="16">16×</button>
+            <button class="pa-scale-btn" data-scale="32">32×</button>
+          </div>
+          <div class="pa-scale-info">
+            Output Size: <strong id="pa-export-dim-label">512 × 512 px</strong>
+          </div>
+        </div>
+
+        <div class="pa-export-bg-option">
+          <label class="pa-checkbox-label">
+            <input type="checkbox" id="pa-export-include-bg">
+            <span>Include canvas background in exported PNG</span>
+          </label>
+        </div>
+      </div>
+      <div class="pa-modal-footer">
+        <button class="pa-btn" data-close-modal>Cancel</button>
+        <button id="btn-download-png" class="pa-btn pa-btn-accent">
+          <i class="fa-solid fa-download"></i> Download PNG
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI ASSISTANT MODAL -->
+  <div id="modal-ai-assistant" class="pa-modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="pa-modal-dialog pa-modal-lg">
+      <div class="pa-modal-header">
+        <h3><i class="fa-solid fa-wand-magic-sparkles text-ai"></i> AI PixelArt Prompt Studio</h3>
+        <button class="pa-modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="pa-modal-body">
+        <p class="pa-modal-hint">
+          Generate complete <strong>PIX2 v1.0 standard</strong> specifications with embedded grammar rules, coordinates, and color indexing for ChatGPT, Claude, and AI assistants.
+        </p>
+
+        <!-- Interactive Dimension & Mode Controls -->
+        <div class="pa-ai-config-panel">
+          <div class="pa-ai-config-row">
+            <div class="pa-ai-config-item">
+              <label><i class="fa-solid fa-vector-square"></i> Dimensions:</label>
+              <div class="pa-ai-dim-inputs">
+                <input type="number" id="input-ai-w" class="pa-ai-num" value="64" min="1" max="1024">
+                <span>×</span>
+                <input type="number" id="input-ai-h" class="pa-ai-num" value="64" min="1" max="1024">
+                <button id="btn-ai-sync-dim" class="pa-btn-xs" title="Sync with current canvas dimensions">
+                  <i class="fa-solid fa-arrows-rotate"></i> Sync Canvas
+                </button>
+              </div>
+            </div>
+
+            <div class="pa-ai-config-item">
+              <label><i class="fa-solid fa-book"></i> Prompt Spec Mode:</label>
+              <select id="select-ai-spec-mode" class="pa-select">
+                <option value="comprehensive" selected>Comprehensive Standard (350+ lines full specification &amp; rules)</option>
+                <option value="compact">Compact Brief (Task &amp; canvas metadata)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pa-ai-aspect-row">
+            <span class="pa-ai-aspect-label">Quick Ratios:</span>
+            <button class="pa-ai-ratio-btn" data-w="16" data-h="16">16×16 (1:1)</button>
+            <button class="pa-ai-ratio-btn" data-w="32" data-h="32">32×32 (1:1)</button>
+            <button class="pa-ai-ratio-btn" data-w="48" data-h="48">48×48 (1:1)</button>
+            <button class="pa-ai-ratio-btn active" data-w="64" data-h="64">64×64 (1:1)</button>
+            <button class="pa-ai-ratio-btn" data-w="128" data-h="128">128×128 (1:1)</button>
+            <button class="pa-ai-ratio-btn" data-w="64" data-h="48">64×48 (4:3)</button>
+            <button class="pa-ai-ratio-btn" data-w="48" data-h="32">48×32 (3:2)</button>
+            <button class="pa-ai-ratio-btn" data-w="192" data-h="108">192×108 (16:9)</button>
+            <button class="pa-ai-ratio-btn" data-w="320" data-h="180">320×180 (16:9)</button>
+          </div>
+        </div>
+
+        <div class="pa-ai-tabs">
+          <button class="pa-ai-tab active" data-template="portrait">Character Portrait</button>
+          <button class="pa-ai-tab" data-template="item">Game Item / Weapon / Icon</button>
+          <button class="pa-ai-tab" data-template="landscape">Scenery / Landscape / Backdrop</button>
+          <button class="pa-ai-tab" data-template="prop">Tileset / Building Kit / Prop</button>
+          <button class="pa-ai-tab" data-template="inject">Inject PIX2 Code</button>
+        </div>
+
+        <div class="pa-ai-tab-content" id="pa-ai-prompt-view">
+          <textarea id="pa-ai-prompt-text" class="pa-ai-prompt-area" readonly></textarea>
+          <div class="pa-ai-actions-row">
+            <button id="btn-copy-ai-prompt" class="pa-btn pa-btn-accent">
+              <i class="fa-regular fa-copy"></i> Copy Prompt for LLM
+            </button>
+            <span class="pa-ai-copy-hint">Paste this into ChatGPT, Claude, Gemini or your autonomous coding agent.</span>
+          </div>
+        </div>
+
+        <div class="pa-ai-tab-content hidden" id="pa-ai-inject-view">
+          <textarea id="pa-ai-inject-code" class="pa-ai-prompt-area" placeholder="Paste generated @pix2 ... @end code here..."></textarea>
+          <div class="pa-ai-actions-row">
+            <button id="btn-confirm-ai-inject" class="pa-btn pa-btn-accent">
+              <i class="fa-solid fa-bolt"></i> Render Code to Canvas
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="pa-modal-footer">
+        <button class="pa-btn" data-close-modal>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP & SHORTCUTS MODAL -->
+  <div id="modal-help" class="pa-modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="pa-modal-dialog">
+      <div class="pa-modal-header">
+        <h3><i class="fa-solid fa-circle-question text-accent"></i> Help &amp; Keyboard Shortcuts</h3>
+        <button class="pa-modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="pa-modal-body">
+        <table class="pa-shortcuts-table">
+          <thead>
+            <tr><th>Shortcut</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>B</kbd></td><td>Pencil (Continuous drawing)</td></tr>
+            <tr><td><kbd>E</kbd></td><td>Eraser</td></tr>
+            <tr><td><kbd>G</kbd></td><td>Paint Bucket (Flood Fill)</td></tr>
+            <tr><td><kbd>L</kbd></td><td>Line Tool (Bresenham)</td></tr>
+            <tr><td><kbd>U</kbd></td><td>Rectangle Outline Tool</td></tr>
+            <tr><td><kbd>Shift+U</kbd></td><td>Filled Rectangle Tool</td></tr>
+            <tr><td><kbd>C</kbd></td><td>Circle / Ellipse Outline Tool</td></tr>
+            <tr><td><kbd>Shift+C</kbd></td><td>Filled Circle / Ellipse Tool</td></tr>
+            <tr><td><kbd>Hold Shift</kbd></td><td>Constrain 1:1 Aspect Ratio (Square / Circle)</td></tr>
+            <tr><td><kbd>Hold Alt</kbd></td><td>Expand Shape from Center Point Outward</td></tr>
+            <tr><td><kbd>M</kbd> / <kbd>V</kbd></td><td>Selection Marquee (Drag inside to move)</td></tr>
+            <tr><td><kbd>I</kbd></td><td>Eyedropper / Color Picker</td></tr>
+            <tr><td><kbd>P</kbd></td><td>Pan / Hand Tool (or hold <kbd>Space</kbd>)</td></tr>
+            <tr><td><kbd>Right-Click</kbd></td><td>Open Context Menu (Transform, Edit, Select)</td></tr>
+            <tr><td><kbd>Ctrl+A</kbd></td><td>Select Entire Canvas</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Deselect / Cancel Selection</td></tr>
+            <tr><td><kbd>X</kbd></td><td>Swap Primary &amp; Secondary Colors</td></tr>
+            <tr><td><kbd>H</kbd> / <kbd>Shift+H</kbd></td><td>Horizontal / Vertical Bilateral Symmetry</td></tr>
+            <tr><td><kbd>R</kbd></td><td>Rotate 90° (Selection or Canvas)</td></tr>
+            <tr><td><kbd>F</kbd></td><td>Fill Selection with Primary Color</td></tr>
+            <tr><td><kbd>Arrows</kbd></td><td>Nudge Pixels (1px Offset)</td></tr>
+            <tr><td><kbd>Ctrl+C</kbd> / <kbd>Ctrl+V</kbd></td><td>Copy / Paste Selection</td></tr>
+            <tr><td><kbd>Ctrl+X</kbd></td><td>Cut Selection</td></tr>
+            <tr><td><kbd>Delete</kbd></td><td>Clear Selection</td></tr>
+            <tr><td><kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd></td><td>Undo / Redo</td></tr>
+            <tr><td><kbd>Ctrl+S</kbd></td><td>Save File (Direct Disk or Download)</td></tr>
+            <tr><td><kbd>Ctrl+Shift+S</kbd></td><td>Save As... (Choose File Name / Location)</td></tr>
+            <tr><td><kbd>Ctrl+O</kbd></td><td>Open File (.pix2, image)</td></tr>
+            <tr><td><kbd>Ctrl+N</kbd></td><td>New Canvas Modal</td></tr>
+            <tr><td><kbd>Wheel</kbd></td><td>Cursor-Centered Integer Zoom (Pixel Anchor Invariant)</td></tr>
+          </tbody>
+        </table>
+
+        <div class="pa-community-banner" style="margin-top: 16px; padding: 12px 14px; background: rgba(88, 101, 242, 0.08); border: 1px solid rgba(88, 101, 242, 0.25); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa-brands fa-discord" style="font-size: 24px; color: #5865f2;"></i>
+            <div>
+              <div style="font-weight: 600; font-size: 13px;">NOIRADIX Discord Community</div>
+              <div style="font-size: 11px; opacity: 0.85;">Official Discord group for discussions, contributions, feedback and connecting with creators</div>
+            </div>
+          </div>
+          <a href="https://discord.gg/K4RNGKDtgk" target="_blank" rel="noopener noreferrer" class="pa-btn pa-btn-sm" style="background: #5865f2; color: #fff; text-decoration: none; padding: 6px 14px; border-radius: 6px; white-space: nowrap; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Join Discord
+          </a>
+        </div>
+      </div>
+      <div class="pa-modal-footer">
+        <button class="pa-btn pa-btn-accent" data-close-modal>Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT MODAL (PIXELART) -->
+  <div id="modal-about-pa" class="pa-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="pa-about-modal-title">
+    <div class="pa-modal-dialog" style="max-width: 480px;">
+      <div class="pa-modal-header">
+        <h3 id="pa-about-modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <img src="../noiradix-studio-logo.svg" alt="NOIRADIX Logo" style="width: 20px; height: 20px;">
+          <span>About NOIRADIX PixelArt</span>
+        </h3>
+        <button class="pa-modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="pa-modal-body" style="display: flex; flex-direction: column; gap: 14px; font-size: 12.5px; line-height: 1.6;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+          <div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--text-main, #f8fafc);">NOIRADIX PixelArt</div>
+            <div style="font-size: 11px; color: var(--text-dim, #94a3b8);">High-Performance Multi-Layer Pixel Art Editor</div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4);">v2.0.0 Stable</span>
+            <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">PIX2 v1.1 Compatible</span>
+          </div>
+        </div>
+
+        <p style="margin: 0; color: var(--text-muted, #cbd5e1);">
+          NOIRADIX PixelArt 2.0 introduces structural layers, named regions, semantic isolation, and unified selection scaling &amp; rotation for the PIX2 1.1 graphics standard.
+        </p>
+
+        <div style="background: rgba(0,0,0,0.25); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 11.5px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim, #94a3b8);">Standard Format:</span>
+            <strong style="color: var(--text-main, #f8fafc);">PIX2 1.1 Structural Graphics</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim, #94a3b8);">Official Domain:</span>
+            <a href="https://noiradix.me/" target="_blank" rel="noopener noreferrer" style="color: #818cf8; text-decoration: none;">https://noiradix.me/</a>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim, #94a3b8);">License:</span>
+            <span style="color: var(--text-main, #f8fafc);">Apache 2.0 / MIT Dual</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <a href="https://discord.gg/K4RNGKDtgk" target="_blank" rel="noopener noreferrer" class="pa-btn pa-btn-sm" style="flex: 1; text-align: center; text-decoration: none; background: #5865f2; color: #fff; border-radius: 6px; padding: 8px; font-size: 11.5px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-brands fa-discord"></i> Discord Community
+          </a>
+          <a href="https://github.com/dotlinux26/noiradix-studio" target="_blank" rel="noopener noreferrer" class="pa-btn pa-btn-sm" style="flex: 1; text-align: center; text-decoration: none; background: rgba(255,255,255,0.08); color: var(--text-main, #f8fafc); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 8px; font-size: 11.5px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-brands fa-github"></i> GitHub Source
+          </a>
+        </div>
+      </div>
+      <div class="pa-modal-footer">
+        <button class="pa-btn pa-btn-accent" data-close-modal>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Opening .pix2 or PNG -->
+  <input type="file" id="pa-hidden-file-input" accept=".pix2,.txt,image/png,image/jpeg" style="display: none;">
+
+  <!-- Version Manifest -->
+  <script src="../js/version.js"></script>
+
+  <!-- Core PIX2 Reference Engine (Reused from parent) -->
+  <script src="../js/pix2-format.js"></script>
+  <script src="../js/selection-transform.js"></script>
+  <script src="../js/structure-operations.js"></script>
+  <script src="../js/editor-state.js"></script>
+
+  <!-- Tools Algorithm Library (Reused from parent) -->
+  <script src="../js/tools.js"></script>
+  <script src="../js/modular-export.js"></script>
+  <script src="../js/import-slice.js"></script>
+
+  <!-- Shared project tab strip: drag-scroll, reorder, pinned new-tab action -->
+  <script src="../js/tab-strip.js"></script>
+
+  <!-- PixelArt Application Logic -->
+  <script src="js/pixelart-app.js"></script>
+</body>
+</html>
+
