@@ -6,7 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { ensureGoogleRuntime, extractGoogleZip } from '../tools/google-acp-runtime.mjs';
-import { createGoogleAcp } from '../tools/google-acp.mjs';
+import { createGoogleAcp, isStudioPermission } from '../tools/google-acp.mjs';
 import { GoogleAcpClient } from '../tools/google-acp-client.mjs';
 import PIX2 from '../js/pix2-format.js';
 import AiDrawing from '../js/ai-drawing.js';
@@ -56,7 +56,7 @@ try {
 
   const dir = path.join(temporary, 'connection'); let starts = 0;
   trace('start connection');
-  const connection = createGoogleAcp({ directory: dir, pollMs: 30, runtimeLoader: async () => { starts++; return fixtureRuntime(); } });
+  const connection = createGoogleAcp({ directory: dir, pollMs: 30, autoApproveEditor: false, runtimeLoader: async () => { starts++; return fixtureRuntime(); } });
   await connection.restore(); assert.equal(starts, 0, 'first visit does not download or authenticate');
   await connection.action('start'); await until(() => connection.status().connected || connection.status().phase === 'error');
   assert.equal(connection.status().connected, true, JSON.stringify(connection.status()));
@@ -90,6 +90,32 @@ try {
   const cancelled = await restored.step({ runId: answer.runId, cancel: true }, signal);
   assert.equal(cancelled.done, true); assert.equal(restored.status().connected, false); await restored.close();
 
+  // Automatic consent is scoped to the closed Studio tool schemas. Labels and
+  // titles never grant permission for a terminal, file or another MCP server.
+  const drawInput = { actions: [{ tool: 'line', color: '#dde8ef', x1: 4, x2: 6, y1: 15, y2: 15 }] };
+  assert(isStudioPermission({ rawInput: drawInput }), 'Actual native permission input need not include a tool name');
+  assert(isStudioPermission({ name: 'mcp__noiradix_studio__draw', rawInput: drawInput }));
+  assert(isStudioPermission({ name: 'inspect_canvas', rawInput: {} }));
+  for (const call of [
+    { title: 'Studio draw', rawInput: { command: 'some-command' } },
+    { name: 'execute', rawInput: drawInput },
+    { name: 'mcp__other__draw', rawInput: drawInput },
+    { name: 'draw', rawInput: { ...drawInput, path: '/private/file' } },
+    { name: 'draw', rawInput: drawInput, locations: [{ path: '/private/file' }] },
+    { name: 'draw', rawInput: { actions: [{ tool: 'pen', color: 'invalid', points: [{ x: 0, y: 0 }] }] } },
+    { name: 'draw', rawInput: { actions: [{ tool: 'line', color: '#ffffff', x1: -1, x2: 6, y1: 0, y2: 0 }] } },
+    { rawInput: {} }, { rawInput: 'draw()' }
+  ]) assert.equal(isStudioPermission(call), false, JSON.stringify(call));
+  const automatic = createGoogleAcp({ directory: path.join(temporary, 'automatic'), pollMs: 30, runtimeLoader: fixtureRuntime });
+  await automatic.action('start'); await until(() => automatic.status().connected);
+  answer = await automatic.step({ message: 'AUTO_PERMISSION_FIXTURE paint', context }, signal);
+  while (answer.waiting) answer = await automatic.step({ runId: answer.runId, poll: true }, signal);
+  assert.equal(answer.permission, undefined); assert.equal(answer.calls[0].name, 'draw');
+  answer = await automatic.step({ runId: answer.runId, results: [{ callId: answer.calls[0].callId, output: { ok: true, canvas: { pix2: '#00dd88' } } }] }, signal);
+  while (answer.waiting) answer = await automatic.step({ runId: answer.runId, poll: true }, signal);
+  assert.equal(answer.done, true); assert.equal(answer.permission, undefined);
+  assert.match(answer.reply, /verified editor pixel/); await automatic.close();
+
   // Real HTTP gates: local origin only; no credential/custom-runtime URL input.
   const server = createStudioServer({ apiKey: '', authDirectory: path.join(temporary, 'auth'), googleOptions: { runtimeLoader: fixtureRuntime, pollMs: 30 } });
   trace('HTTP server');
@@ -103,5 +129,5 @@ try {
     assert.equal((await post('/api/ai/google/model', { model: 'not-entitled' })).status, 400);
     await post('/api/ai/google/disconnect', {});
   } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
-  console.log('PASS Google ACP: pinned checksums, cache reuse/tamper checks, ZIP traversal/symlinks, real stdio RPC, Google auth negotiation, account models, MCP editor feedback, explicit permissions, cancellation, restore and HTTP origin gates. Fixture provider only; no paid calls.');
+  console.log('PASS Google ACP: verified runtime, real stdio RPC/MCP drawing, automatic Studio-only permissions, external tool denial, manual mode, cancellation, restore and origin gates. Fixture provider only; no paid calls.');
 } finally { await rm(temporary, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); }

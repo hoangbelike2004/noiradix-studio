@@ -12,14 +12,16 @@ Studio chạy tuần tự trong cùng một lượt editor:
 | Bước | Tài khoản | Công việc |
 | --- | --- | --- |
 | 1 | ChatGPT | Lập kế hoạch theo yêu cầu và trạng thái dự án |
-| 2 | Gemini qua Google ACP | Thao tác bằng công cụ editor; hỏi quyền trong chat khi cần |
+| 2 | Gemini qua Google ACP | Tự thao tác bằng công cụ editor, không hỏi quyền cho từng lệnh vẽ |
 | 3 | ChatGPT | Kiểm tra snapshot pixel và metadata Studio thật sau lượt Gemini |
 | 4, nếu cần | Gemini | Sửa một lượt theo các nhận xét cụ thể |
 | 5, nếu có sửa | ChatGPT | Đọc lại trạng thái thật, báo kết quả và hạn chế còn lại |
 
 Vai trò được cố định trong phiên bản này: ChatGPT tư vấn/kiểm tra, Gemini thực hiện editor. Các bước tuần tự chia sẻ kết quả; không có hai AI cùng ghi editor một lúc. Kết quả tư vấn không phải bằng chứng đã sửa hình. Trước mỗi lần kiểm tra, Studio yêu cầu editor trả snapshot canvas và Studio mới.
 
-Tiến độ xuất hiện trong chat. **Dừng** hủy cả lượt và khôi phục dự án trước khi gửi; **Ctrl+Z / ⌘Z** hoàn tác cả lượt đã hoàn tất. Nếu provider gặp lỗi, những thay đổi editor đã làm được giữ lại và được báo là chưa hoàn tất. Từ chối quyền Google dừng nhóm, không tự xin lại quyền. Sau khi hủy phiên Google, chọn dùng nhóm lại để khôi phục kết nối.
+Tiến độ xuất hiện trong chat. Các công cụ pixel/frame/animation của Studio tự được cho phép trong lượt đã gửi, kể cả bước sửa theo nhận xét; không cần bấm Cho phép từng lần. Studio kiểm tra đối số theo schema công cụ, không cấp quyền theo tiêu đề do AI viết. Công cụ ngoài editor không được tự cho phép.
+
+**Dừng** hủy cả lượt và khôi phục dự án trước khi gửi; **Ctrl+Z / ⌘Z** hoàn tác cả lượt đã hoàn tất. Nếu provider gặp lỗi, những thay đổi editor đã làm được giữ lại và được báo là chưa hoàn tất. Sau khi hủy phiên Google, chọn dùng nhóm lại để khôi phục kết nối.
 
 Mỗi lượt có tối đa một lần sửa theo nhận xét, tối đa 32 vòng công cụ và 10 phút. Các lệnh xác định như nhân đôi frame hoặc xuất spritesheet vẫn chạy trực tiếp trong editor, không gọi AI.
 

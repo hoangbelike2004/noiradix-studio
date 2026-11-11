@@ -33,12 +33,26 @@ async function receive(message) {
     }
     if (message.method === 'session/set_config_option') { model = params.value; return send({ id, result: { configOptions: models() } }); }
     if (message.method === 'session/prompt') {
-      const decision = await request('session/request_permission', { sessionId, toolCall: { toolCallId: 'fixture-draw', title: 'Draw one actual pixel', kind: 'edit', rawInput: { tool: 'draw', color: '#00dd88' } },
+      if (params.prompt[0].text.includes('AUTO_PERMISSION_FIXTURE')) {
+        for (const toolCall of [
+          { name: 'execute', title: 'Draw one actual pixel', rawInput: { command: 'external-command' } },
+          { name: 'read_file', title: 'Studio inspect', rawInput: { path: '/private/file' } },
+          { name: 'mcp__other__draw', title: 'Studio draw', rawInput: { actions: [{ tool: 'pen', color: '#ffffff', points: [{ x: 0, y: 0 }] }] } }
+        ]) {
+          const refused = await request('session/request_permission', { sessionId, toolCall: { toolCallId: 'outside-studio', ...toolCall },
+            options: [{ optionId: 'once', name: 'Allow once', kind: 'allow_once' }, { optionId: 'deny', name: 'Reject', kind: 'reject_once' }] });
+          if (refused.outcome.optionId === 'once') throw new Error('External tool must not be authorized');
+        }
+      }
+      const decision = await request('session/request_permission', { sessionId, toolCall: { toolCallId: 'fixture-draw', name: 'mcp__noiradix_studio__draw', title: 'Draw one actual pixel', kind: 'edit', rawInput: { actions: [{ tool: 'pen', color: '#00dd88', points: [{ x: 2, y: 0 }] }] } },
         options: [{ optionId: 'once', name: 'Allow once', kind: 'allow_once' }, { optionId: 'deny', name: 'Reject', kind: 'reject_once' }] });
       if (decision.outcome.optionId !== 'once') { send({ method: 'session/update', params: { sessionId, update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Permission declined.' } } } }); return send({ id, result: { stopReason: 'end_turn' } }); }
       const output = await tools('tools/call', { name: 'draw', arguments: { actions: [{ tool: 'pen', color: '#00dd88', points: [{ x: 2, y: 0 }] }] } });
       if (output.isError || !JSON.stringify(output).includes('#00dd88')) throw new Error('Actual editor did not confirm pixel');
-      if (params.prompt[0].text.includes('CANCEL_FIXTURE')) return;
+      if (params.prompt[0].text.includes('CANCEL_FIXTURE')) {
+        send({ method: 'session/update', params: { sessionId, update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'CANCEL_FIXTURE waiting after actual tool feedback.' } } } });
+        return;
+      }
       send({ method: 'session/update', params: { sessionId, update: { sessionUpdate: 'usage_update', used: 320, size: 100000 } } });
       send({ method: 'session/update', params: { sessionId, update: { sessionUpdate: 'agent_thought_chunk', content: { type: 'text', text: 'PRIVATE_THOUGHT_DO_NOT_EXPOSE' } } } });
       send({ method: 'session/update', params: { sessionId, update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Google fixture verified editor pixel.' } } } });

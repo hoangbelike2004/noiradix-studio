@@ -3,7 +3,7 @@
   root.AiAccountTeam = {
     mount({ container, monitor, isBusy, onChange, onOpen }) {
       container.innerHTML = `<h3>Làm việc bằng tài khoản đã đăng nhập</h3>
-        <p class="ai-chat-note">Chọn model từ tài khoản của bạn. ChatGPT lập kế hoạch → Gemini vẽ → ChatGPT kiểm tra; nếu cần, Gemini sửa thêm một lượt.</p>
+        <p class="ai-chat-note">Chọn model từ tài khoản của bạn. ChatGPT lập kế hoạch → Gemini vẽ → ChatGPT kiểm tra; nếu cần, Gemini sửa thêm một lượt. Các bước tự chạy, không cần duyệt từng lệnh vẽ.</p>
         <div class="ai-account-team-cards">
           <section class="ai-account-team-card"><h4>ChatGPT</h4><p data-account-status="chatgpt" role="status"></p>
             <p class="ai-chat-note">Lập kế hoạch và kiểm tra kết quả</p><label class="form-label" for="ai-team-chatgpt-model">Model ChatGPT</label>

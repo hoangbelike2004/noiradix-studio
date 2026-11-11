@@ -208,9 +208,8 @@ try {
     await writeFile(process.env.STUDIO_GOOGLE_SCREENSHOT, Buffer.from(data, 'base64'));
   }
   await evaluate("document.getElementById('btn-close-ai-chat-settings').click(); document.getElementById('ai-chat-input').value='Google paint one verified pixel'; document.getElementById('ai-chat-form').requestSubmit()");
-  await until("Boolean(document.querySelector('.ai-google-permission button:not(:disabled)'))");
-  await evaluate("document.querySelector('.ai-google-permission button:not(:disabled)').click()");
   await until("document.getElementById('ai-chat-messages').textContent.includes('Google fixture verified editor pixel.') && !document.body.classList.contains('ai-drawing-busy')");
+  assert.equal(await evaluate("document.querySelectorAll('.ai-google-permission').length"), 0, 'Google drawing continues without approval cards');
   assert.equal(rootCalls + workerCalls, apiCallsBeforeGoogle, 'Google subscription connection never falls back to paid API keys');
   assert.equal(await evaluate("document.getElementById('ai-chat-messages').textContent.includes('PRIVATE_THOUGHT')"), false);
   await evaluate("document.getElementById('btn-ai-chat-settings').click()");
@@ -261,9 +260,8 @@ try {
     await writeFile(process.env.STUDIO_TEAM_SCREENSHOT, Buffer.from(data, 'base64'));
   }
   await evaluate("document.getElementById('btn-close-ai-chat-settings').click(); document.getElementById('ai-chat-input').value='Team paint one verified pixel'; document.getElementById('ai-chat-form').requestSubmit()");
-  await until("Boolean(document.querySelector('.ai-google-permission button:not(:disabled)'))");
-  await evaluate("document.querySelector('.ai-google-permission button:not(:disabled)').click()");
   await until("document.getElementById('ai-chat-messages').textContent.includes('Team fixture verified actual pixel.') && !document.body.classList.contains('ai-drawing-busy')");
+  assert.equal(await evaluate("document.querySelectorAll('.ai-google-permission').length"), 0, 'Account-team drawing runs without asking');
   assert.equal(teamCalls, 2); assert.equal(rootCalls + workerCalls, paidBeforeTeam);
   assert.equal((await (await fetch(url + '/api/ai/status')).json()).team.workflow.status, 'Completed');
   assert.equal(await evaluate("document.querySelector('#ai-account-team-monitor [data-stage=refine]').dataset.status"), 'Skipped');
@@ -271,15 +269,17 @@ try {
   // editor transaction, without copying account tokens into browser state.
   reviewNeedsCorrection = true;
   await evaluate("document.getElementById('ai-chat-input').value='Team recheck and refine'; document.getElementById('ai-chat-form').requestSubmit()");
-  for (let permission = 0; permission < 2; permission++) {
-    await until("Boolean(document.querySelector('.ai-google-permission button:not(:disabled)'))");
-    await evaluate("document.querySelector('.ai-google-permission button:not(:disabled)').click()");
-  }
   await until("document.getElementById('ai-chat-messages').textContent.includes('Team correction verified actual pixel.') && !document.body.classList.contains('ai-drawing-busy')");
+  assert.equal(await evaluate("document.querySelectorAll('.ai-google-permission').length"), 0, 'The refinement pass also needs no approval');
   assert.equal(teamCalls, 5); assert.equal(rootCalls + workerCalls, paidBeforeTeam);
   assert.equal(await evaluate("document.querySelector('#ai-account-team-monitor [data-stage=refine]').dataset.status"), 'Completed');
+  await evaluate("document.getElementById('ai-chat-input').value='CANCEL_FIXTURE team'; document.getElementById('ai-chat-form').requestSubmit()");
+  await until("document.getElementById('ai-chat-messages').textContent.includes('CANCEL_FIXTURE waiting after actual tool feedback.')");
+  await evaluate("document.getElementById('btn-ai-chat-stop').click()");
+  await until("document.getElementById('ai-chat-messages').textContent.includes('Đã dừng và khôi phục hình trước lượt vẽ này.') && !document.body.classList.contains('ai-drawing-busy')");
+  assert.equal(rootCalls + workerCalls, paidBeforeTeam);
   assert.deepEqual(errors, [], 'no uncaught browser exceptions');
-  console.log('PASS headless browser: account-first settings, API compatibility, ChatGPT/Gemini account team, live MCP pixel feedback, review/refinement, permissions, workflow progress, budgets and source switching. No paid API calls.');
+  console.log('PASS headless browser: account settings, automatic Google/team drawing and refinement with no approval cards, real MCP feedback, Stop/rollback, budgets and source switching. No paid API calls.');
   await send('Browser.close');
 } finally {
   ws?.close(); browser.kill(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve));

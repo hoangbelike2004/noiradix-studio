@@ -37,7 +37,7 @@ const fetchImpl = async (url, options) => {
   return new Response('data: ' + JSON.stringify({ type: 'response.completed', response: { status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: reply }] }], usage: { input_tokens: 30, output_tokens: 10 } } }) + '\n\n', { headers: { 'Content-Type': 'text/event-stream' } });
 };
 const makeServer = () => createStudioServer({ apiKey: 'sk-optional-paid-key-12345678', geminiApiKey: 'optional-google-key-12345678', geminiModel: 'paid-model', authDirectory, fetchImpl,
-  teamOptions: { pollMs: 5 }, googleOptions: { pollMs: 5, runtimeLoader: async () => ({ executable: process.execPath, args: [fileURLToPath(new URL('./fixtures/google-acp-agent.mjs', import.meta.url))] }) } });
+  teamOptions: { pollMs: 5 }, googleOptions: { pollMs: 5, autoApproveEditor: false, runtimeLoader: async () => ({ executable: process.execPath, args: [fileURLToPath(new URL('./fixtures/google-acp-agent.mjs', import.meta.url))] }) } });
 let server = makeServer();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let base = 'http://127.0.0.1:' + server.address().port;

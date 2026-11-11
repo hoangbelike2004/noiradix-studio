@@ -5,7 +5,7 @@ Mở **Trợ lý Studio → ⚙ → Google → Đăng nhập Google**. Lần đ�
 1. Chờ tải và chuẩn bị bộ kết nối. Giao diện hiển thị tiến độ; có thể hủy và thử lại khi mạng ổn định.
 2. Hoàn tất đăng nhập tài khoản Google trong trình duyệt. Studio không yêu cầu mật khẩu hay cookie của tài khoản.
 3. Khi trạng thái **Google đang được dùng cho chat** xuất hiện, chọn model trong danh sách được tài khoản cấp và đóng cài đặt.
-4. Gửi yêu cầu sửa frame, animation, layer hoặc vẽ pixel như bình thường. Agent dùng các công cụ Studio qua MCP; kết quả được gửi lại từ editor thật. Nếu Google yêu cầu quyền thao tác, Studio hiển thị chi tiết và các nút cho phép một lần/từ chối.
+4. Gửi yêu cầu sửa frame, animation, layer hoặc vẽ pixel như bình thường. Agent dùng các công cụ Studio qua MCP; kết quả được gửi lại từ editor thật. Các thao tác editor hợp lệ trong lượt đã gửi được tự cho phép, không hiện nút Cho phép/Từ chối cho từng lệnh. Studio vẫn kiểm tra schema đối số và không tự cấp quyền cho lệnh shell, truy cập file ngoài editor hoặc MCP khác.
 5. **Dừng** hủy lượt và khôi phục transaction editor. Sau khi dừng, kết nối lại Google để mở một phiên sạch; không phát lại công cụ của lượt cũ.
 
 ## Máy khác và bản portable
@@ -24,7 +24,7 @@ Thông tin xác thực do runtime chính thức của Google quản lý. Studio 
 
 ## Tài khoản, model và hạn mức
 
-- Đây là **phiên editor tương tác qua ACP**, dùng riêng hoặc phối hợp trong [Nhóm tài khoản ChatGPT + Gemini](ACCOUNT_TEAM.md). ChatGPT lập kế hoạch/kiểm tra, phiên Google nhận kế hoạch và thao tác qua công cụ editor với quyền được duyệt trong chat. Luồng này tách khỏi scheduler dùng API key; không gọi `agy -p`, trích xuất OAuth token hoặc dùng endpoint web nội bộ.
+- Đây là **phiên editor tương tác qua ACP**, dùng riêng hoặc phối hợp trong [Nhóm tài khoản ChatGPT + Gemini](ACCOUNT_TEAM.md). ChatGPT lập kế hoạch/kiểm tra, phiên Google nhận kế hoạch và tự thao tác qua công cụ editor theo yêu cầu đã gửi. Luồng này tách khỏi scheduler dùng API key; không gọi `agy -p`, trích xuất OAuth token hoặc dùng endpoint web nội bộ.
 - Model được lấy từ phiên ACP của tài khoản, không giả định mọi người đều có Gemini 4 Argon. Hạn mức và quyền sử dụng phụ thuộc gói dịch vụ, khu vực, tài khoản và chính sách Google.
 - Google chịu trách nhiệm cấp quyền sử dụng gói. Đăng nhập thành công không đồng nghĩa mọi model/hạn mức đều được mở. Studio không tự chuyển sang Gemini API trả phí khi gói hết hạn mức.
 - **Dùng nhóm AI / API key** chuyển chat về các kết nối đã cấu hình trước đó. **Dùng Google cho chat** chọn lại phiên Google. **Ngắt kết nối** dừng sử dụng Google trong Studio; không thu hồi phiên Google toàn hệ thống.
